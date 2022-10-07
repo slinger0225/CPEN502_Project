@@ -20,6 +20,12 @@ public class NeuralNet implements NeuralNetInterface {
     private boolean bipolar;
     private Matrix weightIH;
     private Matrix weightHO;
+    private Matrix biasH;
+    private Matrix biasO;
+    private Matrix v_weightIH;
+    private Matrix v_weightHO;
+    private Matrix v_biasH;
+    private Matrix v_biasO;
 
     /**
      * Constructor. (Cannot be declared in an interface, but your implementation will need one)
@@ -45,8 +51,6 @@ public class NeuralNet implements NeuralNetInterface {
         this.bipolar = bipolar;
     }
 
-    private NeuralNet() {
-    }
 
     /**
      * Initialize the weights to random values.
@@ -57,8 +61,16 @@ public class NeuralNet implements NeuralNetInterface {
      */
     @Override
     public void initializeWeights() {
-        this.weightIH = new Matrix(argNumInputs, argNumHidden, -0.5, 0.5);
-        this.weightHO = new Matrix(argNumHidden, argNumOutputs, -0.5, 0.5);
+        this.weightIH = new Matrix(argNumHidden, argNumInputs, -0.5, 0.5);
+        this.weightHO = new Matrix(argNumOutputs, argNumHidden, -0.5, 0.5);
+
+        this.biasH = new Matrix(argNumHidden, 1, -0.5, 0.5);
+        this.biasO = new Matrix(argNumOutputs, 1, -0.5, 0.5);
+
+        this.v_weightIH = new Matrix(argNumHidden, argNumInputs);
+        this.v_biasH = new Matrix(argNumHidden, 1);
+        this.v_weightHO = new Matrix(argNumOutputs, argNumHidden);
+        this.v_biasO = new Matrix(argNumOutputs, 1);
     }
 
     /**
@@ -66,8 +78,16 @@ public class NeuralNet implements NeuralNetInterface {
      */
     @Override
     public void zeroWeights() {
-        this.weightIH = new Matrix(argNumInputs, argNumHidden);
-        this.weightHO = new Matrix(argNumHidden, argNumOutputs);
+        this.weightIH = new Matrix(argNumHidden, argNumInputs);
+        this.weightHO = new Matrix(argNumOutputs, argNumHidden);
+
+        this.biasH = new Matrix(argNumHidden, 1);
+        this.biasO = new Matrix(argNumOutputs, 1);
+
+        this.v_weightIH = new Matrix(argNumHidden, argNumInputs);
+        this.v_biasH = new Matrix(argNumHidden, 1);
+        this.v_weightHO = new Matrix(argNumOutputs, argNumHidden);
+        this.v_biasO = new Matrix(argNumOutputs, 1);
     }
 
     /**
@@ -78,7 +98,8 @@ public class NeuralNet implements NeuralNetInterface {
     public double outputFor(double[] X) {
         // Input to hidden
         Matrix dataI = Matrix.parseArray(X);
-        Matrix dataH = Matrix.multiply(dataI, weightIH);
+        Matrix dataH = Matrix.multiply(weightIH, dataI);
+        dataH.add(biasH);
 
         // Activation function input -> hidden
         if (this.bipolar) {
@@ -88,7 +109,8 @@ public class NeuralNet implements NeuralNetInterface {
         }
 
         // Hidden to output
-        Matrix dataO = Matrix.multiply(dataH, weightHO);
+        Matrix dataO = Matrix.multiply(weightHO, dataH);
+        dataO.add(biasO);
         // Activation function hidden -> output
         if (this.bipolar) {
             dataO.bipolarSigmoid();
@@ -112,6 +134,74 @@ public class NeuralNet implements NeuralNetInterface {
     @Override
     public double train(double[] X, double argValue) {
         double error = 0;
+        Matrix dataI = Matrix.parseArray(X);
+        Matrix target = Matrix.parseArray(new double[]{argValue});
+        Matrix dataH = Matrix.multiply(weightIH, dataI);
+        dataH.add(biasH);
+
+        // Activation function input -> hidden
+        if (this.bipolar) {
+            dataH.bipolarSigmoid();
+        } else {
+            dataH.binarySigmoid();
+        }
+
+        // Hidden to output
+        Matrix dataO = Matrix.multiply(weightHO, dataH);
+        dataO.add(biasO);
+        // Activation function hidden -> output
+        if (this.bipolar) {
+            dataO.bipolarSigmoid();
+        } else {
+            dataO.binarySigmoid();
+        }
+
+        // Compute error
+        Matrix e = Matrix.subtract(target, dataO);
+        error = Matrix.toArray(e)[0];
+
+        // Compute gradient for h_o layer
+        Matrix gradient = this.bipolar ? dataO.dBipolarSigmoid() : dataO.dBinarySigmoid();
+        gradient.multiply(e);
+        gradient.multiply(argLearningRate);
+
+        // compute momentum
+        Matrix h_T = Matrix.transpose(dataH);
+        Matrix d_who = Matrix.multiply(gradient, h_T);
+
+        v_weightHO.multiply(argMomentumTerm);
+        v_weightHO.add(d_who);
+
+        v_biasO.multiply(argMomentumTerm);
+        v_biasO.add(gradient);
+
+        //update parameters in h_o layer
+        weightHO.add(v_weightHO);
+        biasO.add(v_biasO);
+
+        // compute hidden error
+        Matrix who_T = Matrix.transpose(weightHO);
+        Matrix h_e = Matrix.multiply(who_T, e);
+
+        // Compute gradient for i_h layer
+        Matrix h_gradient = this.bipolar ? dataH.dBipolarSigmoid() : dataH.dBinarySigmoid();
+        h_gradient.multiply(h_e);
+        h_gradient.multiply(argLearningRate);
+
+        // compute momentum
+        Matrix i_T = Matrix.transpose(dataI);
+        Matrix d_wih = Matrix.multiply(h_gradient, i_T);
+
+        v_weightIH.multiply(argMomentumTerm);
+        v_weightIH.add(d_wih);
+
+        v_biasH.multiply(argMomentumTerm);
+        v_biasH.add(h_gradient);
+
+        //update parameters in i_h layer
+        weightIH.add(v_weightIH);
+        biasH.add(v_biasH);
+
         return error;
     }
 

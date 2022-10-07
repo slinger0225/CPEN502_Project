@@ -69,6 +69,26 @@ public class Matrix {
         }
     }
 
+    public Matrix dBinarySigmoid() {
+        Matrix ans = new Matrix(rows, cols);
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < this.cols; j++) {
+                ans.m[i][j] = m[i][j] * (1 - m[i][j]);
+            }
+        }
+        return ans;
+    }
+
+    public Matrix dBipolarSigmoid() {
+        Matrix ans = new Matrix(rows, cols);
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < this.cols; j++) {
+                ans.m[i][j] = (m[i][j] + 1) * (1 - m[i][j]) / 2;
+            }
+        }
+        return ans;
+    }
+
 
     public void add(double c) {
         for (int i = 0; i < rows; i++) {
@@ -115,10 +135,38 @@ public class Matrix {
         return res;
     }
 
+    public void multiply(Matrix a) {
+        for (int i = 0; i < a.rows; i++) {
+            for (int j = 0; j < a.cols; j++) {
+                m[i][j] *= a.m[i][j];
+            }
+        }
+
+    }
+
+    public void multiply(double a) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                m[i][j] *= a;
+            }
+        }
+
+    }
+
+    public static Matrix transpose(Matrix a) {
+        Matrix temp = new Matrix(a.cols, a.rows);
+        for (int i = 0; i < a.rows; i++) {
+            for (int j = 0; j < a.cols; j++) {
+                temp.m[j][i] = a.m[i][j];
+            }
+        }
+        return temp;
+    }
+
     public static Matrix parseArray(double[] array) {
-        Matrix res = new Matrix(1, array.length);
-        for (int i = 0; i < res.getCols(); i++) {
-            res.m[0][i] = array[i];
+        Matrix res = new Matrix(array.length, 1);
+        for (int i = 0; i < res.getRows(); i++) {
+            res.m[i][0] = array[i];
         }
         return res;
     }
@@ -136,8 +184,8 @@ public class Matrix {
 
     public static double[] toArray(Matrix mtx) {
         double[] res = new double[mtx.getCols()];
-        for (int i = 0; i < mtx.getCols(); i++) {
-            res[i] = mtx.m[0][i];
+        for (int i = 0; i < mtx.getRows(); i++) {
+            res[i] = mtx.m[i][0];
         }
         return res;
     }
