@@ -22,7 +22,7 @@ public class Main {
         NeuralNet nn = new NeuralNet(2, //numInput
                 4, //numHidden
                 0.2, //rho, learning rate
-                0.9, //alpha, momentum term
+                0.0, //alpha, momentum term
                 false //false for binary, true for bipolar
         );
 
@@ -67,14 +67,15 @@ public class Main {
                 errors.add(totalError);
                 epoch++;
                 System.out.println("Error at epoch " + epoch + " = " + totalError);
-            } while (totalError > LOSS);
-//            } while (epoch <= 300);
+            //} while (totalError > LOSS);
+            } while (epoch <= 3000);
             System.out.println("Target error reached at epochs " + epoch + ". \n");
             epochSum += epoch;
             if (trials == 1) {
                 Plot plt = Plot.create();
                 plt.plot().add(epochs, errors);
-                plt.legend().loc("upper right");
+                plt.xlabel("Number of epochs");
+                plt.ylabel("Error");
                 plt.title("Total Error");
                 plt.show();
             }
