@@ -51,6 +51,8 @@ public class NeuralNet implements NeuralNetInterface {
         this.bipolar = bipolar;
     }
 
+    private NeuralNet() {
+    }
 
     /**
      * Initialize the weights to random values.

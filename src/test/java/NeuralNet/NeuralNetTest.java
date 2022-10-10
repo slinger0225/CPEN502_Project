@@ -26,7 +26,7 @@ class NeuralNetTest {
         Matrix weightsIH = Matrix.initializeWith2dArray(weightsIHArray);
         nn.setWeightIH(weightsIH);
 
-        double[][] weightsHOArray = {{0}, {0}};
+        double[][] weightsHOArray = {{0, 0}};
         Matrix weightsHO = Matrix.initializeWith2dArray(weightsHOArray);
         nn.setWeightHO(weightsHO);
 
