@@ -61,13 +61,12 @@ Linger Shen
 
   - select "Battle --> New", 
   - cmd + R to refresh (remember to refresh, sometime it might not appear at first)
-  - Select your robot and "sample.Tracker",  then Click "Next"
+  - Select your robot and "sample.MyFirstRobot",  then Click "Next"
 
-    [Reference](https://piazza.com/class/l6490p6pqyu637/post/104)
   - Number of rounds = 100000
   - Click "Start Battle"
   - Then you can get back to sleep 😇 Good Luck with your robots (ps. It takes me 1.5h+ to run 100000 rounds)
-
+  
 - Draw graphs
 
   - The output log will be in *$CPEN502_Project/target/classes/robotRunnerLUT.data*
