@@ -1,4 +1,4 @@
-import NeuralNet.NeuralNet;
+import Model.NeuralNet;
 import com.github.sh0nk.matplotlib4j.Plot;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
 
@@ -8,22 +8,22 @@ import java.util.List;
 import java.util.Scanner;
 
 
-public class Main {
+public class xorNeuralNetRunner {
     public static final double LOSS = 0.05;
 
 
     public static void main(String[] args) throws PythonExecutionException, IOException {
         //        Bipolar training set
-//        double[][] xorTraining = {{-1, -1}, {-1, +1}, {+1, -1}, {+1, +1}};
-//        double[] xorTarget = {-1, +1, +1, -1};
+        double[][] xorTraining = {{-1, -1}, {-1, +1}, {+1, -1}, {+1, +1}};
+        double[] xorTarget = {-1, +1, +1, -1};
         //        Binary training set
-        double[][] xorTraining = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-        double[] xorTarget = {0, 1, 1, 0};
+//        double[][] xorTraining = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+//        double[] xorTarget = {0, 1, 1, 0};
         NeuralNet nn = new NeuralNet(2, //numInput
                 4, //numHidden
                 0.2, //rho, learning rate
-                0.0, //alpha, momentum term
-                false //false for binary, true for bipolar
+                0.9, //alpha, momentum term
+                true //false for binary, true for bipolar
         );
 
         //prompt the users to input number of trails
@@ -67,8 +67,8 @@ public class Main {
                 errors.add(totalError);
                 epoch++;
                 System.out.println("Error at epoch " + epoch + " = " + totalError);
-            //} while (totalError > LOSS);
-            } while (epoch <= 3000);
+            } while (totalError > LOSS);
+//            } while (epoch <= 100);
             System.out.println("Target error reached at epochs " + epoch + ". \n");
             epochSum += epoch;
             if (trials == 1) {

@@ -1,4 +1,4 @@
-package NeuralNet;
+package Model;
 
 import Interface.NeuralNetInterface;
 import Tools.Matrix;
@@ -229,7 +229,7 @@ public class NeuralNet implements NeuralNetInterface {
      * @throws IOException
      */
     @Override
-    public NeuralNet load(String argFileName) throws IOException {
+    public void load(String argFileName) throws IOException {
         File file = new File(argFileName);
         ObjectMapper mapper = new ObjectMapper();
         // Deserialize JSON file into Java object.
@@ -239,7 +239,6 @@ public class NeuralNet implements NeuralNetInterface {
         }
         this.weightIH = loadNN.getWeightIH();
         this.weightHO = loadNN.getWeightHO();
-        return loadNN;
     }
 
     public int getArgNumInputs() {

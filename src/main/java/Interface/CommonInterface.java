@@ -1,6 +1,6 @@
 package Interface;
 
-import NeuralNet.NeuralNet;
+import Model.NeuralNet;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +40,6 @@ public interface CommonInterface {
      *
      * @throws IOException
      */
-    public NeuralNet load(String argFileName) throws IOException;
+    public void load(String argFileName) throws IOException;
 }
 

@@ -13,4 +13,9 @@
       <module name="CPEN502_Project" target="15" />
     </bytecodeTargetLevel>
   </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="CPEN502_Project" options="" />
+    </option>
+  </component>
 </project>
