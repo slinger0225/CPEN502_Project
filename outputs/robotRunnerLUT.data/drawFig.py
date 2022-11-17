@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 
-with open('outputs/robotRunnerLUT.data/robotLUT_e=0.log', 'r') as f_e35:
-    fileList = f_e35.readlines()
+with open('./robotLUT_offpolicy.log', 'r') as f_1:
+    fileList = f_1.readlines()
     fileList = fileList[9:]
-    winRateE0 = []
+    winRate1 = []
     for numLine in range(len(fileList)):
-        winRateE0.append(float(fileList[numLine][-5:-1]))
+        winRate1.append(float(fileList[numLine][-5:-1]))
 
-with open('outputs/robotRunnerLUT.data/robotLUT_e=0.35.log', 'r') as f_e35:
+with open('./robotLUT_terminal.log', 'r') as f_e35:
     fileList = f_e35.readlines()
     fileList = fileList[9:]
     winRateE35 = []
@@ -29,8 +29,8 @@ with open('outputs/robotRunnerLUT.data/robotLUT_e=0.45.log', 'r') as f_e35:
         winRateE45.append(float(fileList[numLine][-5:-1]))
 
 plt.figure(1)
-plt.plot(winRateE35, "r", label = 'e = 0.35', linewidth = 0.5)
-plt.plot(winRateE45, "b", label = 'e = 0.45', linewidth = 0.5)
+plt.plot(winRate1, label = 'intermediate rewards', linewidth = 0.5)
+plt.plot(winRateE35, label = 'only terminal rewards', linewidth = 0.5)
 plt.xlabel('# Rounds / hundreds')
 plt.ylabel('Win Rate (%)')
 plt.legend()

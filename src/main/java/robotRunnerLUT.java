@@ -48,7 +48,7 @@ public class robotRunnerLUT extends AdvancedRobot {
     // set RL
     private double gamma = 0.75;
     private double alpha = 0.5;
-    private final double epsilon_initial = 0.35;
+    private final double epsilon_initial = 0.25;
     private double epsilon = epsilon_initial;
     private boolean decayEpsilon = false;
 
@@ -324,6 +324,17 @@ public class robotRunnerLUT extends AdvancedRobot {
                 currentDistanceToEnemy.ordinal(),
                 currentEnemyEnergy.ordinal(),
                 currentDistanceToCenter.ordinal());
+        // on-policy
+//        enumAction maxA;
+//        if (Math.random() < epsilon)
+//            maxA = selectRandomAction();
+//        else {
+//            maxA = selectBestAction(
+//                    currentMyEnergy.ordinal(),
+//                    currentDistanceToEnemy.ordinal(),
+//                    currentEnemyEnergy.ordinal(),
+//                    currentDistanceToCenter.ordinal());
+//        }
 
         double[] prevStateAction = new double[]{
                 previousMyEnergy.ordinal(),
