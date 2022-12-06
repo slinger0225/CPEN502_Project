@@ -1,7 +1,6 @@
 package Model;
 
 import Interface.LUTInterface;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import robocode.RobocodeFileOutputStream;
 
 import java.io.*;
