@@ -239,6 +239,12 @@ public class NeuralNet implements NeuralNetInterface {
         }
         this.weightIH = loadNN.getWeightIH();
         this.weightHO = loadNN.getWeightHO();
+        this.biasH = loadNN.getBiasH();
+        this.biasO = loadNN.getBiasO();
+        this.v_weightIH = loadNN.getWeightIH_v();
+        this.v_weightHO = loadNN.getWeightHO_v();
+        this.v_biasH = loadNN.getBiasH_v();
+        this.v_biasO = loadNN.getBiasO_v();
     }
 
     public int getArgNumInputs() {
@@ -287,6 +293,30 @@ public class NeuralNet implements NeuralNetInterface {
 
     public Matrix getWeightHO() {
         return weightHO;
+    }
+
+    public Matrix getBiasH() {
+        return biasH;
+    }
+
+    public Matrix getBiasO() {
+        return biasO;
+    }
+
+    public Matrix getWeightIH_v() {
+        return v_weightIH;
+    }
+
+    public Matrix getWeightHO_v() {
+        return v_weightHO;
+    }
+
+    public Matrix getBiasH_v() {
+        return v_biasH;
+    }
+
+    public Matrix getBiasO_v() {
+        return v_biasO;
     }
 
     public void setWeightIH(Matrix weights) {

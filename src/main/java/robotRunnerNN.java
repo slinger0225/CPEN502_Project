@@ -1,6 +1,6 @@
-import Model.LUT;
-import robocode.*;
+import Model.NeuralNet;
 import Tools.LogFile;
+import robocode.*;
 
 import java.awt.*;
 import java.io.IOException;
@@ -8,47 +8,50 @@ import java.util.Random;
 
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
-public class robotRunnerLUT extends AdvancedRobot {
-    private String saveClassname =  getClass().getSimpleName() + ".txt";
+public class robotRunnerNN extends AdvancedRobot {
+    private String saveClassname = getClass().getSimpleName() + ".txt";
 
     public enum enumEnergy {zero, dying, low, medium, high}
 
     public enum enumDistance {exClose, close, near, far, exFar}
 
     public enum enumAction {circle, retreat, advance, fire, toCenter}
+
     public enum enumOptionalMode {scan, performanceAction}
 
-    static private LUT q = new LUT(
-            enumEnergy.values().length,
-            enumDistance.values().length,
-            enumEnergy.values().length,
-            enumDistance.values().length,
-            enumAction.values().length
+    static private NeuralNet q = new NeuralNet(
+            9, //numInput
+            20, //numHidden
+            0.01, //rho, learning rate
+            0.8, //alpha, momentum term
+            true //false for binary, true for bipolar
     );
+
+    static boolean NNinitialized = false;
 
     static int totalNumRounds = 0;
     static int numRoundsTo100 = 0;
     static int numWins = 0;
 
-    private enumEnergy currentMyEnergy = enumEnergy.high;
-    private enumEnergy currentEnemyEnergy = enumEnergy.high;
-    private enumDistance currentDistanceToEnemy = enumDistance.near;
-    private enumDistance currentDistanceToCenter = enumDistance.near;
+    private double currentMyEnergy = 100;
+    private double currentEnemyEnergy = 100;
+    private double currentDistanceToEnemy = 500;
+    private double currentDistanceToCenter = 500;
     private enumAction currentAction = enumAction.circle;
 
 
-    private enumEnergy previousMyEnergy = enumEnergy.high;
-    private enumEnergy previousEnemyEnergy = enumEnergy.high;
-    private enumDistance previousDistanceToEnemy = enumDistance.near;
-    private enumDistance previousDistanceToCenter = enumDistance.near;
+    private double previousMyEnergy = 100;
+    private double previousEnemyEnergy = 100;
+    private double previousDistanceToEnemy = 500;
+    private double previousDistanceToCenter = 500;
     private enumAction previousAction = enumAction.circle;
 
     private enumOptionalMode optionalMode = enumOptionalMode.scan;
 
     // set RL
-    private double gamma = 0.75;
+    private double gamma = 0.5;
     private double alpha = 0.5;
-    private final double epsilon_initial = 0.35;
+    private final double epsilon_initial = 0.5;
     private double epsilon = epsilon_initial;
     private boolean decayEpsilon = false;
 
@@ -57,10 +60,10 @@ public class robotRunnerLUT extends AdvancedRobot {
     private double previousQ = 0.0;
 
     // Rewards
-    private final double goodReward = 1.0;
-    private final double badReward = -0.25;
-    private final double goodTerminalReward = 2.0;
-    private final double badTerminalReward = -0.5;
+    private final double goodReward = 0.2;
+    private final double badReward = -0.05;
+    private final double goodTerminalReward = 0.5;
+    private final double badTerminalReward = -0.1;
 
     private double currentReward = 0.0;
 
@@ -72,13 +75,11 @@ public class robotRunnerLUT extends AdvancedRobot {
     double enemyDistance = 0.0;
     double enemyEnergy = 0.0;
 
-    double totalReward = 0.0;
-
     int direction = 1;
 
 
     // Logging
-    static String logFilename = "robotLUT.log";
+    static String logFilename = "robotNN.log";
     static LogFile log = null;
 
     // get center of board
@@ -111,10 +112,16 @@ public class robotRunnerLUT extends AdvancedRobot {
             log.stream.printf("goodTerminalReward, %2.2f\n\n", goodTerminalReward);
         }
 
+        if (!NNinitialized) {
+            NNinitialized = true;
+            log.stream.printf("Initialie NN\n");
+            q.initializeWeights();
+        }
+
         while (true) {
 
             // set epsilon to 0 after 8000 round
-            if (totalNumRounds > 5000) epsilon = 0;
+            if (totalNumRounds > 8000) epsilon = 0;
 
             System.out.println("Flag 1");
 
@@ -125,14 +132,17 @@ public class robotRunnerLUT extends AdvancedRobot {
                 execute();
 
             // Update previous Q
-            double[] x = new double[]{
-                    previousMyEnergy.ordinal(),
-                    previousDistanceToEnemy.ordinal(),
-                    previousEnemyEnergy.ordinal(),
-                    previousDistanceToCenter.ordinal(),
-                    previousAction.ordinal()};
+//            double[] x = new double[]{
+//                    previousMyEnergy,
+//                    previousDistanceToEnemy,
+//                    previousEnemyEnergy,
+//                    previousDistanceToCenter,
+//                    previousAction.ordinal()};
 
-            q.train(x, computeQ(currentReward));
+            double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
+                    previousDistanceToCenter, previousAction.ordinal());
+
+            q.train(scaledX, computeQ(currentReward));
 
             optionalMode = enumOptionalMode.scan;
             execute();
@@ -201,38 +211,38 @@ public class robotRunnerLUT extends AdvancedRobot {
         previousEnemyEnergy = currentEnemyEnergy;
         previousAction = currentAction;
 
-        currentMyEnergy = enumEnergyOf(getEnergy());
-        currentDistanceToCenter = enumDistanceOf(distanceToCenter(myX, myY, xMid, yMid));
-        currentDistanceToEnemy = enumDistanceOf(e.getDistance());
-        currentEnemyEnergy = enumEnergyOf(e.getEnergy());
+        currentMyEnergy = getEnergy();
+        currentDistanceToCenter = distanceToCenter(myX, myY, xMid, yMid);
+        currentDistanceToEnemy = e.getDistance();
+        currentEnemyEnergy = e.getEnergy();
         optionalMode = enumOptionalMode.performanceAction;
     }
 
     @Override
     public void onBulletHit(BulletHitEvent e) {
-        currentReward = goodReward; totalReward += currentReward;
+        currentReward = goodReward;
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent e) {
-        currentReward = badReward; totalReward += currentReward;
+        currentReward = badReward;
     }
 
     @Override
     public void onDeath(DeathEvent e) {
         currentReward = badTerminalReward;
-        totalReward += currentReward;
-        totalReward = 0;
 
         // Update Q, otherwise it won't be updated at the last round
-        double[] x = new double[]{
-                previousMyEnergy.ordinal(),
-                previousDistanceToEnemy.ordinal(),
-                previousEnemyEnergy.ordinal(),
-                previousDistanceToCenter.ordinal(),
-                previousAction.ordinal()};
+//        double[] x = new double[]{
+//                previousMyEnergy,
+//                previousDistanceToEnemy,
+//                previousEnemyEnergy,
+//                previousDistanceToCenter,
+//                previousAction.ordinal()};
+        double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
+                previousDistanceToCenter, previousAction.ordinal());
 
-        q.train(x, computeQ(currentReward));
+        q.train(scaledX, computeQ(currentReward));
 
         // stats
         if (numRoundsTo100 < 100) {
@@ -245,24 +255,28 @@ public class robotRunnerLUT extends AdvancedRobot {
             numWins = 0;
         }
 
-        q.save(getDataFile(saveClassname));
+//        try {
+//            q.save(getDataFile(saveClassname));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
     public void onWin(WinEvent e) {
         currentReward = goodTerminalReward;
-        totalReward += currentReward;
-        totalReward = 0;
 
         // Update Q, otherwise it won't be updated at the last round
-        double[] x = new double[]{
-                previousMyEnergy.ordinal(),
-                previousDistanceToEnemy.ordinal(),
-                previousEnemyEnergy.ordinal(),
-                previousDistanceToCenter.ordinal(),
-                previousAction.ordinal()};
+//        double[] x = new double[]{
+//                previousMyEnergy.ordinal(),
+//                previousDistanceToEnemy.ordinal(),
+//                previousEnemyEnergy.ordinal(),
+//                previousDistanceToCenter.ordinal(),
+//                previousAction.ordinal()};
+        double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
+                previousDistanceToCenter, previousAction.ordinal());
 
-        q.train(x, computeQ(currentReward));
+        q.train(scaledX, computeQ(currentReward));
 
         // stats
         if (numRoundsTo100 < 100) {
@@ -276,7 +290,11 @@ public class robotRunnerLUT extends AdvancedRobot {
             numWins = 0;
         }
 
-        q.save(getDataFile(saveClassname));
+//        try {
+//            q.save(getDataFile(saveClassname));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
@@ -288,10 +306,6 @@ public class robotRunnerLUT extends AdvancedRobot {
     @Override
     public void onHitRobot(HitRobotEvent e) {
         super.onHitRobot(e);
-//        if (e.isMyFault()) {
-//            currentReward = badReward;
-//            totalReward += currentReward;
-//        }
         avoidObstacle();
     }
 
@@ -320,10 +334,10 @@ public class robotRunnerLUT extends AdvancedRobot {
 
     public double computeQ(double r) {
         enumAction maxA = selectBestAction(
-                currentMyEnergy.ordinal(),
-                currentDistanceToEnemy.ordinal(),
-                currentEnemyEnergy.ordinal(),
-                currentDistanceToCenter.ordinal());
+                currentMyEnergy,
+                currentDistanceToEnemy,
+                currentEnemyEnergy,
+                currentDistanceToCenter);
         // on-policy
 //        enumAction maxA;
 //        if (Math.random() < epsilon)
@@ -336,25 +350,48 @@ public class robotRunnerLUT extends AdvancedRobot {
 //                    currentDistanceToCenter.ordinal());
 //        }
 
-        double[] prevStateAction = new double[]{
-                previousMyEnergy.ordinal(),
-                previousDistanceToEnemy.ordinal(),
-                previousEnemyEnergy.ordinal(),
-                previousDistanceToCenter.ordinal(),
-                previousAction.ordinal()};
+//        double[] prevStateAction = new double[]{
+//                previousMyEnergy.ordinal(),
+//                previousDistanceToEnemy.ordinal(),
+//                previousEnemyEnergy.ordinal(),
+//                previousDistanceToCenter.ordinal(),
+//                previousAction.ordinal()};
 
-        double[] currentStateAction = new double[]{
-                currentMyEnergy.ordinal(),
-                currentDistanceToEnemy.ordinal(),
-                currentEnemyEnergy.ordinal(),
-                currentDistanceToCenter.ordinal(),
-                maxA.ordinal()};
+//        double[] currentStateAction = new double[]{
+//                currentMyEnergy.ordinal(),
+//                currentDistanceToEnemy.ordinal(),
+//                currentEnemyEnergy.ordinal(),
+//                currentDistanceToCenter.ordinal(),
+//                maxA.ordinal()};
+
+        double[] prevStateAction = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
+                previousDistanceToCenter, previousAction.ordinal());
+
+        double[] currentStateAction = getScaledX(currentMyEnergy, currentDistanceToEnemy, currentEnemyEnergy,
+                currentDistanceToCenter, maxA.ordinal());
 
         double prevQ = q.outputFor(prevStateAction);
         double currentQ = q.outputFor(currentStateAction);
 
-        double updatedQ = prevQ + alpha * (r + gamma * currentQ - prevQ);
+        double updatedQ = (prevQ + alpha * (r + gamma * currentQ - prevQ));
+        if (updatedQ > 1.0 || updatedQ < -1.0) {
+            log.stream.printf("updatedQ %2.1f\n", updatedQ);
+        }
         return updatedQ;
+    }
+
+    public double[] getScaledX(double previousMyEnergy, double previousDistanceToEnemy,
+                               double previousEnemyEnergy, double previousDistanceToCenter,
+                               int previousAction) {
+        double[] onehotX = new double[9];
+        onehotX[0] = previousMyEnergy / 100;
+        onehotX[1] = previousDistanceToEnemy / 1000;
+        onehotX[2] = previousEnemyEnergy / 100;
+        onehotX[3] = previousDistanceToCenter / 1000;
+        for (int i = 4; i < 9; i++) {
+            onehotX[i] = (i - 4 == previousAction) ? 1 : 0;
+        }
+        return onehotX;
     }
 
     public enumAction selectRandomAction() {
@@ -364,17 +401,14 @@ public class robotRunnerLUT extends AdvancedRobot {
     }
 
     public enumAction selectBestAction(double e, double d, double e2, double d2) {
-        int energy = enumEnergyOf(e).ordinal();
-        int distance = enumDistanceOf(d).ordinal();
-        int enemyEnergy = enumEnergyOf(e2).ordinal();
-        int distanceToCenter = enumDistanceOf(e2).ordinal();
         double bestQ = -Double.MAX_VALUE;
         enumAction bestAction = null;
 
         for (int a = enumAction.circle.ordinal(); a < enumAction.values().length; a++) {
-            double[] x = new double[]{energy, distance, enemyEnergy, distanceToCenter, a};
-            if (q.outputFor(x) > bestQ) {
-                bestQ = q.outputFor(x);
+            double[] scaledX = getScaledX(e, d, e2, d2, a);
+            double newQ = q.outputFor(scaledX);
+            if (newQ > bestQ) {
+                bestQ = newQ;
                 bestAction = enumAction.values()[a];
             }
         }
@@ -416,6 +450,10 @@ public class robotRunnerLUT extends AdvancedRobot {
     public double getBearingToCenter(double fromX, double fromY, double toX, double toY, double currentHeadingRadians) {
         double b = Math.PI / 2 - Math.atan2(toY - fromY, toX - fromX);
         return norm(b - currentHeadingRadians);
+    }
+
+    public double bipolarSigmoid(double x) {
+        return 2 / (1 + Math.exp(-1 * x)) - 1;
     }
 
 }
