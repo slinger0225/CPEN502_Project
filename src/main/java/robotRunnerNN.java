@@ -4,6 +4,8 @@ import robocode.*;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static robocode.util.Utils.normalRelativeAngleDegrees;
@@ -33,17 +35,17 @@ public class robotRunnerNN extends AdvancedRobot {
     static int numRoundsTo100 = 0;
     static int numWins = 0;
 
-    private double currentMyEnergy = 100;
-    private double currentEnemyEnergy = 100;
-    private double currentDistanceToEnemy = 500;
-    private double currentDistanceToCenter = 500;
+    private enumEnergy currentMyEnergy = enumEnergy.high;
+    private enumEnergy currentEnemyEnergy = enumEnergy.high;
+    private enumDistance currentDistanceToEnemy = enumDistance.near;
+    private enumDistance currentDistanceToCenter = enumDistance.near;
     private enumAction currentAction = enumAction.circle;
 
 
-    private double previousMyEnergy = 100;
-    private double previousEnemyEnergy = 100;
-    private double previousDistanceToEnemy = 500;
-    private double previousDistanceToCenter = 500;
+    private enumEnergy previousMyEnergy = enumEnergy.high;
+    private enumEnergy previousEnemyEnergy = enumEnergy.high;
+    private enumDistance previousDistanceToEnemy = enumDistance.near;
+    private enumDistance previousDistanceToCenter = enumDistance.near;
     private enumAction previousAction = enumAction.circle;
 
     private enumOptionalMode optionalMode = enumOptionalMode.scan;
@@ -384,10 +386,26 @@ public class robotRunnerNN extends AdvancedRobot {
                                double previousEnemyEnergy, double previousDistanceToCenter,
                                int previousAction) {
         double[] onehotX = new double[9];
-        onehotX[0] = previousMyEnergy / 100;
-        onehotX[1] = previousDistanceToEnemy / 1000;
-        onehotX[2] = previousEnemyEnergy / 100;
-        onehotX[3] = previousDistanceToCenter / 1000;
+        Map<Integer, Double> normalizedE = new HashMap<Integer, Double>(){{
+            put(0, 0.0);
+            put(1, 0.2);
+            put(2, 0.4);
+            put(3, 0.6);
+            put(4, 1.0);
+        }};
+
+        Map<Integer, Double> normalizedD = new HashMap<Integer, Double>(){{
+            put(0, 0.05);
+            put(1, 0.25);
+            put(2, 0.5);
+            put(3, 0.75);
+            put(4, 1.0);
+        }};
+
+        onehotX[0] = normalizedE.get(previousMyEnergy);
+        onehotX[1] = normalizedD.get(previousDistanceToEnemy);
+        onehotX[2] = normalizedE.get(previousEnemyEnergy);
+        onehotX[3] = normalizedD.get(previousDistanceToCenter);
         for (int i = 4; i < 9; i++) {
             onehotX[i] = (i - 4 == previousAction) ? 1 : 0;
         }
