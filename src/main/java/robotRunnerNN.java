@@ -23,7 +23,7 @@ public class robotRunnerNN extends AdvancedRobot {
 
     static private NeuralNet q = new NeuralNet(
             9, //numInput
-            20, //numHidden
+            8, //numHidden
             0.01, //rho, learning rate
             0.8, //alpha, momentum term
             true //false for binary, true for bipolar
@@ -51,9 +51,9 @@ public class robotRunnerNN extends AdvancedRobot {
     private enumOptionalMode optionalMode = enumOptionalMode.scan;
 
     // set RL
-    private double gamma = 0.5;
-    private double alpha = 0.5;
-    private final double epsilon_initial = 0.5;
+    private double gamma = 0.9;
+    private double alpha = 0.05;
+    private final double epsilon_initial = 0.35;
     private double epsilon = epsilon_initial;
     private boolean decayEpsilon = false;
 
@@ -62,11 +62,10 @@ public class robotRunnerNN extends AdvancedRobot {
     private double previousQ = 0.0;
 
     // Rewards
-    private final double goodReward = 0.2;
+    private final double goodReward = 0.05;
     private final double badReward = -0.05;
-    private final double goodTerminalReward = 0.5;
-    private final double badTerminalReward = -0.1;
-
+    private final double goodTerminalReward = 0.2;
+    private final double badTerminalReward = -0.2;
     private double currentReward = 0.0;
 
     // Initialize states
@@ -141,8 +140,8 @@ public class robotRunnerNN extends AdvancedRobot {
 //                    previousDistanceToCenter,
 //                    previousAction.ordinal()};
 
-            double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
-                    previousDistanceToCenter, previousAction.ordinal());
+            double[] scaledX = getScaledX(previousMyEnergy.ordinal(), previousDistanceToEnemy.ordinal(), previousEnemyEnergy.ordinal(),
+                    previousDistanceToCenter.ordinal(), previousAction.ordinal());
 
             q.train(scaledX, computeQ(currentReward));
 
@@ -157,10 +156,10 @@ public class robotRunnerNN extends AdvancedRobot {
             currentAction = selectRandomAction();
         else
             currentAction = selectBestAction(
-                    myEnergy,
-                    enemyDistance,
-                    enemyEnergy,
-                    distanceToCenter(myX, myY, xMid, yMid)
+                    enumEnergyOf(myEnergy).ordinal(),
+                    enumDistanceOf(enemyDistance).ordinal(),
+                    enumEnergyOf(enemyEnergy).ordinal(),
+                    enumDistanceOf(distanceToCenter(myX, myY, xMid, yMid)).ordinal()
             );
 
         switch (currentAction) {
@@ -213,10 +212,10 @@ public class robotRunnerNN extends AdvancedRobot {
         previousEnemyEnergy = currentEnemyEnergy;
         previousAction = currentAction;
 
-        currentMyEnergy = getEnergy();
-        currentDistanceToCenter = distanceToCenter(myX, myY, xMid, yMid);
-        currentDistanceToEnemy = e.getDistance();
-        currentEnemyEnergy = e.getEnergy();
+        currentMyEnergy = enumEnergyOf(getEnergy());
+        currentDistanceToCenter = enumDistanceOf(distanceToCenter(myX, myY, xMid, yMid));
+        currentDistanceToEnemy = enumDistanceOf(e.getDistance());
+        currentEnemyEnergy = enumEnergyOf(e.getEnergy());
         optionalMode = enumOptionalMode.performanceAction;
     }
 
@@ -241,8 +240,8 @@ public class robotRunnerNN extends AdvancedRobot {
 //                previousEnemyEnergy,
 //                previousDistanceToCenter,
 //                previousAction.ordinal()};
-        double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
-                previousDistanceToCenter, previousAction.ordinal());
+        double[] scaledX = getScaledX(previousMyEnergy.ordinal(), previousDistanceToEnemy.ordinal(), previousEnemyEnergy.ordinal(),
+                previousDistanceToCenter.ordinal(), previousAction.ordinal());
 
         q.train(scaledX, computeQ(currentReward));
 
@@ -257,11 +256,11 @@ public class robotRunnerNN extends AdvancedRobot {
             numWins = 0;
         }
 
-//        try {
-//            q.save(getDataFile(saveClassname));
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
+        try {
+            q.save(getDataFile(saveClassname));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     @Override
@@ -275,8 +274,8 @@ public class robotRunnerNN extends AdvancedRobot {
 //                previousEnemyEnergy.ordinal(),
 //                previousDistanceToCenter.ordinal(),
 //                previousAction.ordinal()};
-        double[] scaledX = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
-                previousDistanceToCenter, previousAction.ordinal());
+        double[] scaledX = getScaledX(previousMyEnergy.ordinal(), previousDistanceToEnemy.ordinal(), previousEnemyEnergy.ordinal(),
+                previousDistanceToCenter.ordinal(), previousAction.ordinal());
 
         q.train(scaledX, computeQ(currentReward));
 
@@ -292,11 +291,11 @@ public class robotRunnerNN extends AdvancedRobot {
             numWins = 0;
         }
 
-//        try {
-//            q.save(getDataFile(saveClassname));
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
+        try {
+            q.save(getDataFile(saveClassname));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     @Override
@@ -336,10 +335,10 @@ public class robotRunnerNN extends AdvancedRobot {
 
     public double computeQ(double r) {
         enumAction maxA = selectBestAction(
-                currentMyEnergy,
-                currentDistanceToEnemy,
-                currentEnemyEnergy,
-                currentDistanceToCenter);
+                currentMyEnergy.ordinal(),
+                currentDistanceToEnemy.ordinal(),
+                currentEnemyEnergy.ordinal(),
+                currentDistanceToCenter.ordinal());
         // on-policy
 //        enumAction maxA;
 //        if (Math.random() < epsilon)
@@ -366,24 +365,26 @@ public class robotRunnerNN extends AdvancedRobot {
 //                currentDistanceToCenter.ordinal(),
 //                maxA.ordinal()};
 
-        double[] prevStateAction = getScaledX(previousMyEnergy, previousDistanceToEnemy, previousEnemyEnergy,
-                previousDistanceToCenter, previousAction.ordinal());
+        double[] prevStateAction = getScaledX(previousMyEnergy.ordinal(), previousDistanceToEnemy.ordinal(), previousEnemyEnergy.ordinal(),
+                previousDistanceToCenter.ordinal(), previousAction.ordinal());
 
-        double[] currentStateAction = getScaledX(currentMyEnergy, currentDistanceToEnemy, currentEnemyEnergy,
-                currentDistanceToCenter, maxA.ordinal());
+        double[] currentStateAction = getScaledX(currentMyEnergy.ordinal(), currentDistanceToEnemy.ordinal(), currentEnemyEnergy.ordinal(),
+                currentDistanceToCenter.ordinal(), maxA.ordinal());
 
         double prevQ = q.outputFor(prevStateAction);
         double currentQ = q.outputFor(currentStateAction);
 
         double updatedQ = (prevQ + alpha * (r + gamma * currentQ - prevQ));
-        if (updatedQ > 1.0 || updatedQ < -1.0) {
-            log.stream.printf("updatedQ %2.1f\n", updatedQ);
-        }
+//        if (updatedQ > 1.0 || updatedQ < -1.0) {
+//            log.stream.printf("updatedQ %2.1f\n", updatedQ);
+//        }
+        updatedQ = Math.max(updatedQ, -1);
+        updatedQ = Math.min(updatedQ, 1);
         return updatedQ;
     }
 
-    public double[] getScaledX(double previousMyEnergy, double previousDistanceToEnemy,
-                               double previousEnemyEnergy, double previousDistanceToCenter,
+    public double[] getScaledX(int previousMyEnergy, int previousDistanceToEnemy,
+                               int previousEnemyEnergy, int previousDistanceToCenter,
                                int previousAction) {
         double[] onehotX = new double[9];
         Map<Integer, Double> normalizedE = new HashMap<Integer, Double>(){{
@@ -418,7 +419,7 @@ public class robotRunnerNN extends AdvancedRobot {
         return enumAction.values()[r];
     }
 
-    public enumAction selectBestAction(double e, double d, double e2, double d2) {
+    public enumAction selectBestAction(int e, int d, int e2, int d2) {
         double bestQ = -Double.MAX_VALUE;
         enumAction bestAction = null;
 
