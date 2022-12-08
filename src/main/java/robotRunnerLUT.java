@@ -1,4 +1,6 @@
 import Model.LUT;
+import ReplayMemory.ReplayMemory;
+import ReplayMemory.Experience;
 import robocode.*;
 import Tools.LogFile;
 
@@ -51,7 +53,7 @@ public class robotRunnerLUT extends AdvancedRobot {
     private double alpha = 0.5;
     private final double epsilon_initial = 0.5;
     private double epsilon = epsilon_initial;
-    private boolean decayEpsilon = true;
+    private boolean decayEpsilon = false;
     private int targetNumRounds = 10000;
     private int round_num = 0;
 
@@ -60,10 +62,10 @@ public class robotRunnerLUT extends AdvancedRobot {
     private double previousQ = 0.0;
 
     // Rewards
-    private final double goodReward = 1.0;
-    private final double badReward = -0.25;
-    private final double goodTerminalReward = 2.0;
-    private final double badTerminalReward = -0.5;
+    private final double goodReward = 0.1;
+    private final double badReward = -0.1;
+    private final double goodTerminalReward = 0.4;
+    private final double badTerminalReward = -0.4;
 
     private double currentReward = 0.0;
 
@@ -78,7 +80,6 @@ public class robotRunnerLUT extends AdvancedRobot {
     double totalReward = 0.0;
 
     int direction = 1;
-
 
     // Logging
     static String logFilename = "robotLUT.log";
@@ -130,7 +131,7 @@ public class robotRunnerLUT extends AdvancedRobot {
                 }
             } else {
                 // set epsilon to 0 after 8000 round
-                if (totalNumRounds > 8000) epsilon = 0;
+                if (totalNumRounds > 12500) epsilon = 0;
             }
 
             System.out.println("Flag 1");
@@ -385,24 +386,6 @@ public class robotRunnerLUT extends AdvancedRobot {
         int r = rand.nextInt(enumAction.values().length);
         return enumAction.values()[r];
     }
-
-//    public enumAction selectBestAction(double e, double d, double e2, double d2) {
-//        int energy = enumEnergyOf(e).ordinal();
-//        int distance = enumDistanceOf(d).ordinal();
-//        int enemyEnergy = enumEnergyOf(e2).ordinal();
-//        int distanceToCenter = enumDistanceOf(e2).ordinal();
-//        double bestQ = -Double.MAX_VALUE;
-//        enumAction bestAction = null;
-//
-//        for (int a = enumAction.circle.ordinal(); a < enumAction.values().length; a++) {
-//            double[] x = new double[]{energy, distance, enemyEnergy, distanceToCenter, a};
-//            if (q.outputFor(x) > bestQ) {
-//                bestQ = q.outputFor(x);
-//                bestAction = enumAction.values()[a];
-//            }
-//        }
-//        return bestAction;
-//    }
 
     public enumAction selectBestAction(int e, int d, int e2, int d2) {
         double bestQ = -Double.MAX_VALUE;

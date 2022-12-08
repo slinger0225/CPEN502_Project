@@ -34,7 +34,6 @@ with open('./TotalRewards.log', 'r') as f_e35:
             num = 0
         num += 1
 
-# print(sum(winRateE35)/len(winRateE35))
 plt.figure(1)
 plt.plot(totalRewards, label='metrics: Total rewards', linewidth=0.5)
 # plt.plot(winRateE35, label = 'only terminal rewards', linewidth = 0.5)
