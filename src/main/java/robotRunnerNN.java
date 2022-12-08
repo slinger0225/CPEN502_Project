@@ -51,8 +51,8 @@ public class robotRunnerNN extends AdvancedRobot {
     private enumOptionalMode optionalMode = enumOptionalMode.scan;
 
     // set RL
-    private double gamma = 0.9;
-    private double alpha = 0.05;
+    private double gamma = 0.75;
+    private double alpha = 0.5;
     private final double epsilon_initial = 0.35;
     private double epsilon = epsilon_initial;
     private boolean decayEpsilon = false;
@@ -62,10 +62,10 @@ public class robotRunnerNN extends AdvancedRobot {
     private double previousQ = 0.0;
 
     // Rewards
-    private final double goodReward = 0.05;
-    private final double badReward = -0.05;
-    private final double goodTerminalReward = 0.2;
-    private final double badTerminalReward = -0.2;
+    private final double goodReward = 0.1;
+    private final double badReward = -0.1;
+    private final double goodTerminalReward = 0.4;
+    private final double badTerminalReward = -0.4;
     private double currentReward = 0.0;
 
     // Initialize states
@@ -81,7 +81,11 @@ public class robotRunnerNN extends AdvancedRobot {
 
     // Logging
     static String logFilename = "robotNN.log";
+
+    static String logFilename2 = "robotNN_reward.log";
     static LogFile log = null;
+
+//    static LogFile log2 = null;
 
     // get center of board
     int xMid = 0;
@@ -112,6 +116,11 @@ public class robotRunnerNN extends AdvancedRobot {
             log.stream.printf("goodInstantReward, %2.2f\n", goodReward);
             log.stream.printf("goodTerminalReward, %2.2f\n\n", goodTerminalReward);
         }
+
+//        if (log2 == null) {
+//            log2 = new LogFile(getDataFile(logFilename2));
+//        }
+
 
         if (!NNinitialized) {
             NNinitialized = true;
@@ -256,11 +265,11 @@ public class robotRunnerNN extends AdvancedRobot {
             numWins = 0;
         }
 
-        try {
-            q.save(getDataFile(saveClassname));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+//        try {
+//            q.save(getDataFile(saveClassname));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
@@ -291,11 +300,11 @@ public class robotRunnerNN extends AdvancedRobot {
             numWins = 0;
         }
 
-        try {
-            q.save(getDataFile(saveClassname));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+//        try {
+//            q.save(getDataFile(saveClassname));
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
@@ -375,6 +384,8 @@ public class robotRunnerNN extends AdvancedRobot {
         double currentQ = q.outputFor(currentStateAction);
 
         double updatedQ = (prevQ + alpha * (r + gamma * currentQ - prevQ));
+//        log2.stream.printf("%2.1f\n", updatedQ);
+//        log2.stream.flush();
 //        if (updatedQ > 1.0 || updatedQ < -1.0) {
 //            log.stream.printf("updatedQ %2.1f\n", updatedQ);
 //        }
