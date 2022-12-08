@@ -21,7 +21,7 @@ public class robotRunnerNN extends AdvancedRobot {
 
     static private NeuralNet q = new NeuralNet(
             9, //numInput
-            20, //numHidden
+            40, //numHidden
             0.01, //rho, learning rate
             0.8, //alpha, momentum term
             true //false for binary, true for bipolar
@@ -46,12 +46,25 @@ public class robotRunnerNN extends AdvancedRobot {
     private double previousDistanceToCenter = 500;
     private enumAction previousAction = enumAction.circle;
 
+//    private enumEnergy currentMyEnergy = enumEnergy.high;
+//    private enumEnergy currentEnemyEnergy = enumEnergy.high;
+//    private enumDistance currentDistanceToEnemy = enumDistance.near;
+//    private enumDistance currentDistanceToCenter = enumDistance.near;
+//    private enumAction currentAction = enumAction.circle;
+//
+//
+//    private enumEnergy previousMyEnergy = enumEnergy.high;
+//    private enumEnergy previousEnemyEnergy = enumEnergy.high;
+//    private enumDistance previousDistanceToEnemy = enumDistance.near;
+//    private enumDistance previousDistanceToCenter = enumDistance.near;
+//    private enumAction previousAction = enumAction.circle;
+
     private enumOptionalMode optionalMode = enumOptionalMode.scan;
 
     // set RL
     private double gamma = 0.5;
     private double alpha = 0.5;
-    private final double epsilon_initial = 0.5;
+    private final double epsilon_initial = 0.35;
     private double epsilon = epsilon_initial;
     private boolean decayEpsilon = false;
 
@@ -60,10 +73,10 @@ public class robotRunnerNN extends AdvancedRobot {
     private double previousQ = 0.0;
 
     // Rewards
-    private final double goodReward = 0.2;
-    private final double badReward = -0.05;
-    private final double goodTerminalReward = 0.5;
-    private final double badTerminalReward = -0.1;
+    private final double goodReward = 0.25;
+    private final double badReward = -0.25;
+    private final double goodTerminalReward = 1;
+    private final double badTerminalReward = -1;
 
     private double currentReward = 0.0;
 
@@ -121,7 +134,7 @@ public class robotRunnerNN extends AdvancedRobot {
         while (true) {
 
             // set epsilon to 0 after 8000 round
-            if (totalNumRounds > 8000) epsilon = 0;
+            if (totalNumRounds > 10000) epsilon = 0;
 
             System.out.println("Flag 1");
 
@@ -210,6 +223,12 @@ public class robotRunnerNN extends AdvancedRobot {
         previousDistanceToEnemy = currentDistanceToEnemy;
         previousEnemyEnergy = currentEnemyEnergy;
         previousAction = currentAction;
+
+//        currentMyEnergy = enumEnergyOf(getEnergy());
+//        currentDistanceToCenter = enumDistanceOf(distanceToCenter(myX, myY, xMid, yMid));
+//        currentDistanceToEnemy = enumDistanceOf(e.getDistance());
+//        currentEnemyEnergy = enumEnergyOf(e.getEnergy());
+//        optionalMode = enumOptionalMode.performanceAction;
 
         currentMyEnergy = getEnergy();
         currentDistanceToCenter = distanceToCenter(myX, myY, xMid, yMid);

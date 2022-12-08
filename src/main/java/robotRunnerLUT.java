@@ -9,13 +9,14 @@ import java.util.Random;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 public class robotRunnerLUT extends AdvancedRobot {
-    private String saveClassname =  getClass().getSimpleName() + ".txt";
+    private String saveClassname = getClass().getSimpleName() + ".txt";
 
     public enum enumEnergy {zero, dying, low, medium, high}
 
     public enum enumDistance {exClose, close, near, far, exFar}
 
     public enum enumAction {circle, retreat, advance, fire, toCenter}
+
     public enum enumOptionalMode {scan, performanceAction}
 
     static private LUT q = new LUT(
@@ -48,9 +49,11 @@ public class robotRunnerLUT extends AdvancedRobot {
     // set RL
     private double gamma = 0.75;
     private double alpha = 0.5;
-    private final double epsilon_initial = 0.35;
+    private final double epsilon_initial = 0.5;
     private double epsilon = epsilon_initial;
-    private boolean decayEpsilon = false;
+    private boolean decayEpsilon = true;
+    private int targetNumRounds = 10000;
+    private int round_num = 0;
 
     //previous and current Q
     private double currentQ = 0.0;
@@ -80,6 +83,8 @@ public class robotRunnerLUT extends AdvancedRobot {
     // Logging
     static String logFilename = "robotLUT.log";
     static LogFile log = null;
+    static String logFilename2 = "TotalRewards.log";
+    static LogFile log2 = null;
 
     // get center of board
     int xMid = 0;
@@ -111,10 +116,22 @@ public class robotRunnerLUT extends AdvancedRobot {
             log.stream.printf("goodTerminalReward, %2.2f\n\n", goodTerminalReward);
         }
 
-        while (true) {
+        if (log2 == null) {
+            log2 = new LogFile((getDataFile(logFilename2)));
+        }
 
-            // set epsilon to 0 after 8000 round
-            if (totalNumRounds > 5000) epsilon = 0;
+        while (true) {
+            round_num++;
+            if (decayEpsilon & epsilon > 0) {
+                if (round_num <= targetNumRounds) {
+                    epsilon = epsilon_initial * (1 - round_num * 1.0 / targetNumRounds);
+                } else {
+                    epsilon = 0;
+                }
+            } else {
+                // set epsilon to 0 after 8000 round
+                if (totalNumRounds > 8000) epsilon = 0;
+            }
 
             System.out.println("Flag 1");
 
@@ -145,10 +162,10 @@ public class robotRunnerLUT extends AdvancedRobot {
             currentAction = selectRandomAction();
         else
             currentAction = selectBestAction(
-                    myEnergy,
-                    enemyDistance,
-                    enemyEnergy,
-                    distanceToCenter(myX, myY, xMid, yMid)
+                    enumEnergyOf(myEnergy).ordinal(),
+                    enumDistanceOf(enemyDistance).ordinal(),
+                    enumEnergyOf(enemyEnergy).ordinal(),
+                    enumDistanceOf(distanceToCenter(myX, myY, xMid, yMid)).ordinal()
             );
 
         switch (currentAction) {
@@ -210,18 +227,22 @@ public class robotRunnerLUT extends AdvancedRobot {
 
     @Override
     public void onBulletHit(BulletHitEvent e) {
-        currentReward = goodReward; totalReward += currentReward;
+        currentReward = goodReward;
+        totalReward += currentReward;
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent e) {
-        currentReward = badReward; totalReward += currentReward;
+        currentReward = badReward;
+        totalReward += currentReward;
     }
 
     @Override
     public void onDeath(DeathEvent e) {
         currentReward = badTerminalReward;
         totalReward += currentReward;
+        log2.stream.printf("%2.1f\n", totalReward);
+        log2.stream.flush();
         totalReward = 0;
 
         // Update Q, otherwise it won't be updated at the last round
@@ -252,6 +273,8 @@ public class robotRunnerLUT extends AdvancedRobot {
     public void onWin(WinEvent e) {
         currentReward = goodTerminalReward;
         totalReward += currentReward;
+        log2.stream.printf("%2.1f\n", totalReward);
+        log2.stream.flush();
         totalReward = 0;
 
         // Update Q, otherwise it won't be updated at the last round
@@ -363,18 +386,33 @@ public class robotRunnerLUT extends AdvancedRobot {
         return enumAction.values()[r];
     }
 
-    public enumAction selectBestAction(double e, double d, double e2, double d2) {
-        int energy = enumEnergyOf(e).ordinal();
-        int distance = enumDistanceOf(d).ordinal();
-        int enemyEnergy = enumEnergyOf(e2).ordinal();
-        int distanceToCenter = enumDistanceOf(e2).ordinal();
+//    public enumAction selectBestAction(double e, double d, double e2, double d2) {
+//        int energy = enumEnergyOf(e).ordinal();
+//        int distance = enumDistanceOf(d).ordinal();
+//        int enemyEnergy = enumEnergyOf(e2).ordinal();
+//        int distanceToCenter = enumDistanceOf(e2).ordinal();
+//        double bestQ = -Double.MAX_VALUE;
+//        enumAction bestAction = null;
+//
+//        for (int a = enumAction.circle.ordinal(); a < enumAction.values().length; a++) {
+//            double[] x = new double[]{energy, distance, enemyEnergy, distanceToCenter, a};
+//            if (q.outputFor(x) > bestQ) {
+//                bestQ = q.outputFor(x);
+//                bestAction = enumAction.values()[a];
+//            }
+//        }
+//        return bestAction;
+//    }
+
+    public enumAction selectBestAction(int e, int d, int e2, int d2) {
         double bestQ = -Double.MAX_VALUE;
         enumAction bestAction = null;
 
         for (int a = enumAction.circle.ordinal(); a < enumAction.values().length; a++) {
-            double[] x = new double[]{energy, distance, enemyEnergy, distanceToCenter, a};
-            if (q.outputFor(x) > bestQ) {
-                bestQ = q.outputFor(x);
+            double[] x = new double[]{e, d, e2, d2, a};
+            double newQ = q.outputFor(x);
+            if (newQ > bestQ) {
+                bestQ = newQ;
                 bestAction = enumAction.values()[a];
             }
         }
